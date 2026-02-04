@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/dlclark/regexp2 v1.11.5
+	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 )
 
