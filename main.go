@@ -5,6 +5,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/ktsoator/connectify/internal/repository"
+	"github.com/ktsoator/connectify/internal/repository/dao"
+	"github.com/ktsoator/connectify/internal/service"
 	"github.com/ktsoator/connectify/internal/web"
 )
 
@@ -23,7 +26,11 @@ func main() {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	userHandler := web.NewUserHandler()
+	db := dao.InitDB()
+	userDAO := dao.NewUserDAO(db)
+	userRepo := repository.NewUserRepository(userDAO)
+	userService := service.NewUserService(userRepo)
+	userHandler := web.NewUserHandler(userService)
 	userHandler.RegisterRoutes(router)
 
 	router.Run(":8080")

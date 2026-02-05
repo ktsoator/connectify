@@ -5,6 +5,8 @@ import (
 
 	"github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/ktsoator/connectify/internal/domain"
+	"github.com/ktsoator/connectify/internal/service"
 )
 
 const (
@@ -12,10 +14,14 @@ const (
 	passwordRegex = `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$`
 )
 
-type UserHandler struct{}
+type UserHandler struct {
+	svc *service.UserService
+}
 
-func NewUserHandler() *UserHandler {
-	return &UserHandler{}
+func NewUserHandler(service *service.UserService) *UserHandler {
+	return &UserHandler{
+		svc: service,
+	}
 }
 
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
@@ -62,6 +68,15 @@ func (h *UserHandler) Signup(c *gin.Context) {
 
 	if req.Password != req.ConfirmPassword {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "passwords do not match"})
+		return
+	}
+
+	err = h.svc.Signup(c.Request.Context(), domain.User{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "system error"})
 		return
 	}
 
