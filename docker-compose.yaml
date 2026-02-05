@@ -1,0 +1,41 @@
+# ==============================================================================
+# Docker Compose Cheat Sheet (Common Commands)
+# ==============================================================================
+# 1. Start services in background:     docker-compose up -d
+# 2. Stop and remove containers:       docker-compose down
+# 3. Stop and remove EVERYTHING:       docker-compose down -v (removes volumes)
+# 4. View logs (follow):               docker-compose logs -f mysql8
+# 5. Enter container shell:            docker-compose exec mysql8 bash
+# 6. Check status:                     docker-compose ps
+# 7. Restart services:                 docker-compose restart
+# ==============================================================================
+
+services:
+  mysql8:
+    image: mysql:8.0
+    restart: always
+    # 1. Compatibility: MySQL 8.0 defaults to 'caching_sha2_password'.
+    # 2. Native Password: Forces 'mysql_native_password' to ensure compatibility with older clients/libraries.
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      # 1. Mounting: Maps './scripts/sql/mysql/' to container's '/docker-entrypoint-initdb.d/'.
+      # 2. Live Link: Any changes in 'scripts/sql/mysql/*.sql' are instantly reflected in the container.
+      # 3. Auto-Init: MySQL executes all scripts here during the FIRST container startup/initialization.
+      - ./scripts/sql/mysql/:/docker-entrypoint-initdb.d/
+
+      # Data persistence
+      # - ./data/mysql:/var/lib/mysql
+    ports:
+      # 1. Host: 13306
+      # 2. Container: 3306
+      # 3. Purpose: Enables external access to MySQL server running inside the container.
+      - 13306:3306
+
+  # redis:
+  #   image: 'bitnami/redis:latest'
+  #   environment:
+  #     - ALLOW_EMPTY_PASSWORD=yes
+  #   ports:
+  #     - 16379:6379
