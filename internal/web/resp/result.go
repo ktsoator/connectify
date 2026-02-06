@@ -1,4 +1,4 @@
-package web
+package resp
 
 // Code definitions
 const (

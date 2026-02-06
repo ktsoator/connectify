@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/ktsoator/connectify/internal/web/middleware"
 )
 
 func InitRouter() *gin.Engine {
@@ -21,6 +24,22 @@ func InitRouter() *gin.Engine {
 		// },
 		MaxAge: 12 * time.Hour,
 	}))
+
+	// Initialize the session storage engine.
+	// "Ktsoator" is the secret key used to encrypt/sign session data.
+	// It prevents users from tampering with cookie content. In production, this should be more complex and kept secret.
+	store := cookie.NewStore([]byte("Ktsoator"))
+
+	// Register global session middleware.
+	// "connectify" is the name (key) of the cookie in the browser.
+	// When the browser stores the cookie, it will show Name="connectify".
+	// 'store' is the storage engine created above, determining where session data is actually stored (here, in the cookie).
+	server.Use(sessions.Sessions("connectify", store))
+
+	server.Use(middleware.NewLoginMiddlewareBuilder().
+		IgnorePath("/user/login").
+		IgnorePath("/user/signup").
+		Build())
 
 	return server
 }

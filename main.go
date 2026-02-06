@@ -6,6 +6,7 @@ import (
 	"github.com/ktsoator/connectify/internal/repository/dao"
 	"github.com/ktsoator/connectify/internal/service"
 	"github.com/ktsoator/connectify/internal/web"
+	"github.com/ktsoator/connectify/internal/web/user"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,6 @@ func initUser(db *gorm.DB, router *gin.Engine) {
 	userDAO := dao.NewUserDAO(db)
 	userRepo := repository.NewUserRepository(userDAO)
 	userService := service.NewUserService(userRepo)
-	userHandler := web.NewUserHandler(userService)
+	userHandler := user.NewUserHandler(userService)
 	userHandler.RegisterRoutes(router)
 }

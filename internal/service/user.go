@@ -42,18 +42,18 @@ func (s *UserService) Signup(ctx context.Context, user domain.User) error {
 	return nil
 }
 
-func (s *UserService) Login(ctx context.Context, email, password string) error {
+func (s *UserService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	// 1. Find user by email
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		// If the user is not found, we return a generic "invalid user or password" error.
 		// This is a security best practice to prevent user enumeration attacks.
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrInvalidUserOrPassword
+			return domain.User{}, ErrInvalidUserOrPassword
 		}
 
 		// Return other errors
-		return err
+		return domain.User{}, err
 	}
 
 	// 2. Compare the provided password with the stored hashed password
@@ -61,8 +61,8 @@ func (s *UserService) Login(ctx context.Context, email, password string) error {
 	if err != nil {
 		// If the password does not match, we also return the same generic error
 		// to ensure the error message is consistent regardless of whether the email or password was incorrect.
-		return ErrInvalidUserOrPassword
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
 
-	return nil
+	return user, nil
 }
