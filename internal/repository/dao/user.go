@@ -2,9 +2,31 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
+)
+
+type UserModel struct {
+	ID        int64  `gorm:"primaryKey;autoIncrement"`
+	Email     string `gorm:"unique"`
+	Password  string
+	CreatedAt int64
+	UpdatedAt int64
+}
+
+var (
+	// ErrDuplicateEmail is returned when the email already exists in the database
+	ErrDuplicateEmail = errors.New("email already exists")
+
+	// ErrRecordNotFound is returned when a record is not found in the database
+	ErrRecordNotFound = errors.New("record not found")
+)
+
+const (
+	mysqlDuplicateEntryErrCode uint16 = 1062
 )
 
 type UserDAO struct {
@@ -15,17 +37,39 @@ func NewUserDAO(db *gorm.DB) *UserDAO {
 	return &UserDAO{db: db}
 }
 
-func (u *UserDAO) Insert(ctx context.Context, user User) error {
+func (u *UserDAO) Insert(ctx context.Context, user UserModel) error {
 	now := time.Now().UnixMilli()
 	user.CreatedAt = now
 	user.UpdatedAt = now
-	return u.db.Create(&user).Error
+
+	err := u.db.WithContext(ctx).Create(&user).Error
+
+	if err != nil {
+		// Use errors.As to check if the error is a MySQL driver error.
+		// It unwraps the error if it was wrapped by other layers (like GORM).
+		var mysqlErr *mysql.MySQLError
+		// 1062 is the MySQL error code for "Duplicate entry"
+		// This happens when a unique constraint (like the email) is violated.
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlDuplicateEntryErrCode {
+			return ErrDuplicateEmail
+		}
+		// If it's not a duplicate email error, return the original error (e.g., db connection lost)
+		// We must return the error so the caller knows something went wrong.
+		return err
+	}
+	return nil
 }
 
-type User struct {
-	ID        int64  `gorm:"primaryKey;autoIncrement"`
-	Email     string `gorm:"unique"`
-	Password  string
-	CreatedAt int64
-	UpdatedAt int64
+func (u *UserDAO) FindByEmail(ctx context.Context, email string) (UserModel, error) {
+	var user UserModel
+	err := u.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		// If the record is not found, return a specific error defined in the DAO package
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return UserModel{}, ErrRecordNotFound
+		}
+		// Return other database errors(e.g., connection lost)
+		return UserModel{}, err
+	}
+	return user, nil
 }
