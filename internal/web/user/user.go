@@ -128,13 +128,31 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		Intro    string `json:"intro"`
 	}
 
+	session := sessions.Default(c)
+	uidVal := session.Get("userId")
+	uid, ok := uidVal.(int64)
+	if !ok {
+		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "login expired or invalid session", Data: nil})
+		return
+	}
+
+	user, err := h.svc.Profile(c.Request.Context(), uid)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeUserNotFound, Msg: "user not found", Data: nil})
+			return
+		}
+		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		return
+	}
+
 	c.JSON(http.StatusOK, resp.Result{
 		Code: resp.CodeSuccess,
 		Msg:  "success",
 		Data: ProfileResponse{
-			Email:    "test@example.com",
-			Nickname: "MockUser",
-			Intro:    "This is a mock introduction.",
+			Email:    user.Email,
+			Nickname: user.Nickname,
+			Intro:    user.Intro,
 		},
 	})
 }
@@ -151,7 +169,29 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.Result{Code: resp.CodeSuccess, Msg: "user profile updated successfully", Data: req})
+	session := sessions.Default(c)
+	uidVal := session.Get("userId")
+	uid, ok := uidVal.(int64)
+	if !ok {
+		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "login expired or invalid session", Data: nil})
+		return
+	}
+
+	err := h.svc.Update(c.Request.Context(), domain.User{
+		ID:       uid,
+		Nickname: req.Nickname,
+		Intro:    req.Intro,
+	})
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeUserNotFound, Msg: "user not found", Data: nil})
+			return
+		}
+		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp.Result{Code: resp.CodeSuccess, Msg: "user profile updated successfully", Data: nil})
 }
 
 func ValidatePassword(password string) (bool, error) {

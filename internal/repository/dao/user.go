@@ -13,6 +13,8 @@ type UserModel struct {
 	ID        int64  `gorm:"primaryKey;autoIncrement"`
 	Email     string `gorm:"unique"`
 	Password  string
+	Nickname  string
+	Intro     string
 	CreatedAt int64
 	UpdatedAt int64
 }
@@ -64,12 +66,31 @@ func (u *UserDAO) FindByEmail(ctx context.Context, email string) (UserModel, err
 	var user UserModel
 	err := u.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
-		// If the record is not found, return a specific error defined in the DAO package
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return UserModel{}, ErrRecordNotFound
 		}
-		// Return other database errors(e.g., connection lost)
 		return UserModel{}, err
 	}
 	return user, nil
+}
+
+func (u *UserDAO) FindByID(ctx context.Context, id int64) (UserModel, error) {
+	var user UserModel
+	err := u.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return UserModel{}, ErrRecordNotFound
+		}
+		return UserModel{}, err
+	}
+	return user, nil
+}
+
+func (u *UserDAO) UpdateById(ctx context.Context, user UserModel) error {
+	return u.db.WithContext(ctx).Model(&user).Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"nickname":   user.Nickname,
+			"intro":      user.Intro,
+			"updated_at": time.Now().UnixMilli(),
+		}).Error
 }

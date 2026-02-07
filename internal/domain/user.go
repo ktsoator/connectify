@@ -4,4 +4,6 @@ type User struct {
 	ID       int64
 	Email    string
 	Password string
+	Nickname string
+	Intro    string
 }

@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrDuplicateEmail        = repository.ErrDuplicateEmail
+	ErrUserNotFound          = repository.ErrUserNotFound
 	ErrInvalidUserOrPassword = errors.New("invalid email or password")
 )
 
@@ -65,4 +66,31 @@ func (s *UserService) Login(ctx context.Context, email, password string) (domain
 	}
 
 	return user, nil
+}
+
+func (s *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
+	// Attempt to retrieve user data from the repository layer
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		// If the repository reports the user wasn't found, map it to a service-level error
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return domain.User{}, ErrUserNotFound
+		}
+		// Return any other unexpected infrastructure or database errors
+		return domain.User{}, err
+	}
+	return user, nil
+}
+
+func (s *UserService) Update(ctx context.Context, user domain.User) error {
+	// Delegate the update operation to the repository layer
+	err := s.repo.Update(ctx, user)
+	if err != nil {
+		// Specifically handle the case where the user record being updated no longer exists
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+	return nil
 }

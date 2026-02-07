@@ -16,6 +16,9 @@ const (
 	// CodeInvalidCreds indicates that the login failed due to incorrect email or password.
 	CodeInvalidCreds = 40102
 
+	// CodeUserNotFound indicates that the requested user does not exist.
+	CodeUserNotFound = 40103
+
 	// CodeServerBusy indicates an internal server error or unexpected failure.
 	// This maps to a 500 Internal Server Error, telling the client to retry later.
 	CodeServerBusy = 50001
