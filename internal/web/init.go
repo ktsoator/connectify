@@ -28,7 +28,10 @@ func InitRouter() *gin.Engine {
 	// Initialize the session storage engine.
 	// "Ktsoator" is the secret key used to encrypt/sign session data.
 	// It prevents users from tampering with cookie content. In production, this should be more complex and kept secret.
-	store := cookie.NewStore([]byte("Ktsoator"))
+	// "Ktsoator" is the authentication key (for signing).
+	// "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B" is the encryption key (for encrypting).
+	// In production, these should be loaded from environment variables.
+	store := cookie.NewStore([]byte("Ktsoator"), []byte("np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B"))
 
 	// Register global session middleware.
 	// "connectify" is the name (key) of the cookie in the browser.
