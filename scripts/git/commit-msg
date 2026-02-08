@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Get the commit message file path
+MSG_FILE=$1
+MSG_CONTENT=$(cat "$MSG_FILE")
+
+# Define format: feat|fix|docs|style|refactor|perf|test|chore: description
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: .+"
+
+if [[ ! $MSG_CONTENT =~ $PATTERN ]]; then
+    echo "Error: Bad commit message format!"
+    echo "Example: 'feat: add login feature' or 'fix(user): fix login timeout'"
+    echo "Allowed types: feat, fix, docs, style, refactor, perf, test, chore"
+    exit 1
+fi
+
+exit 0

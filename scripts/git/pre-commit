@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# 1. Run go fmt
+echo "Running go fmt..."
+STAGED_GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".go$")
+
+if [ -n "$STAGED_GO_FILES" ]; then
+    for FILE in $STAGED_GO_FILES; do
+        go fmt "$FILE"
+        git add "$FILE"
+    done
+fi
+
+# 2. Run go vet
+echo "Running go vet..."
+go vet ./...
+if [ $? -ne 0 ]; then
+    echo "Go vet failed. Please fix issues before committing."
+    exit 1
+fi
+
+echo "Pre-commit checks passed!"
+exit 0
