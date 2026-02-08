@@ -45,26 +45,41 @@ func main() {
 	}
 	blockKey := []byte(blockKeyStr)
 
-	data := make(map[any]any)
-	s := securecookie.New(hashKey, blockKey)
-	err := s.Decode("connectify", rawCookie, &data)
+	// In Redis mode, gin-contrib/sessions stores the Session ID as a GOB-encoded string.
+	// In Cookie mode, it stores the data as a GOB-encoded map[interface{}]interface{}.
+	// We try string first (Redis), then fallback to map (Cookie).
 
-	if err != nil {
-		fmt.Printf("\nDecryption failed: %v\n", err)
+	s := securecookie.New(hashKey, blockKey)
+
+	// Try String (Redis/Session ID)
+	var sessionID string
+	err := s.Decode("connectify", rawCookie, &sessionID)
+	if err == nil {
+		fmt.Println("\nDecryption Successful!")
+		fmt.Println("----------------------------------------")
+		fmt.Println("Store Type: Redis/Other (Data stored on Server)")
+		fmt.Printf("Session ID: %s\n", sessionID)
+		fmt.Println("\n[Note] In Redis mode, the cookie only contains the Session ID.")
+		fmt.Println("To see actual data, you must query Redis using this ID.")
+		fmt.Println("----------------------------------------")
 		return
 	}
 
-	fmt.Println("\nDecryption Successful!")
-	fmt.Println("----------------------------------------")
-
-	if len(data) == 0 {
-		fmt.Println("Session is empty")
-	} else {
+	// Try Map (Cookie Store)
+	data := make(map[interface{}]interface{})
+	err = s.Decode("connectify", rawCookie, &data)
+	if err == nil {
+		fmt.Println("\nDecryption Successful!")
+		fmt.Println("----------------------------------------")
+		fmt.Println("Store Type: Cookie Store (Data stored in Cookie)")
 		for k, v := range data {
 			fmt.Printf("%v: %v (%T)\n", k, v, v)
 		}
+		fmt.Println("----------------------------------------")
+		return
 	}
-	fmt.Println("----------------------------------------")
+
+	fmt.Printf("\nDecryption failed: %v\n", err)
 }
 
 func cleanInput(input string) string {

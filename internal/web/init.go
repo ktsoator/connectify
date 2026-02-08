@@ -43,10 +43,10 @@ func InitRouter() *gin.Engine {
 	// 2. "tcp": Network type.
 	// 3. "localhost:16379": Redis server address (mapped in docker-compose).
 	// 4. "": Username (empty for default Redis setup).
-	// 5. "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B": Password (set in docker-compose).
+	// 5. "": Password (empty as per ALLOW_EMPTY_PASSWORD=yes in docker-compose).
 	// 6. []byte(...): Authentication key for signing session cookies.
 	// 7. []byte(...): Encryption key for encrypting session data (AES).
-	store, err := redis.NewStore(10, "tcp", "localhost:16379", "", "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B",
+	store, err := redis.NewStore(10, "tcp", "localhost:16379", "", "",
 		[]byte("Ktsoator"), []byte("np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B"))
 	if err != nil {
 		fmt.Println("Failed to initialize Redis session store:", err)
