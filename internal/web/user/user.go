@@ -32,6 +32,7 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 
 	rg.POST("/signup", h.Signup)
 	rg.POST("/login", h.Login)
+	rg.POST("/logout", h.Logout)
 	rg.GET("/profile", h.GetProfile)
 	rg.PUT("/profile", h.UpdateProfile)
 }
@@ -45,32 +46,56 @@ func (h *UserHandler) Signup(c *gin.Context) {
 
 	var req SignUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "invalid request", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "invalid request",
+			Data: nil,
+		})
 		return
 	}
 
 	ok, err := ValidateEmail(req.Email)
 	if err != nil {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 	if !ok {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "email format error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "email format error",
+			Data: nil,
+		})
 		return
 	}
 
 	ok, err = ValidatePassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 	if !ok {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "password format error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "password format error",
+			Data: nil,
+		})
 		return
 	}
 
 	if req.Password != req.ConfirmPassword {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "passwords do not match", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "passwords do not match",
+			Data: nil,
+		})
 		return
 	}
 
@@ -80,14 +105,26 @@ func (h *UserHandler) Signup(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrDuplicateEmail) {
-			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeUserExist, Msg: "email already exists", Data: nil})
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeUserExist,
+				Msg:  "email already exists",
+				Data: nil,
+			})
 			return
 		}
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.Result{Code: resp.CodeSuccess, Msg: "user registered successfully", Data: nil})
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "user registered successfully",
+		Data: nil,
+	})
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
@@ -98,18 +135,30 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "invalid request", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "invalid request",
+			Data: nil,
+		})
 		return
 	}
 
 	user, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidUserOrPassword) {
-			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidCreds, Msg: "invalid email or password", Data: nil})
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeInvalidCreds,
+				Msg:  "invalid email or password",
+				Data: nil,
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 
@@ -118,7 +167,11 @@ func (h *UserHandler) Login(c *gin.Context) {
 	session.Set("email", user.Email)
 	session.Save()
 
-	c.JSON(http.StatusOK, resp.Result{Code: resp.CodeSuccess, Msg: "user logged in successfully", Data: nil})
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "user logged in successfully",
+		Data: nil,
+	})
 }
 
 func (h *UserHandler) GetProfile(c *gin.Context) {
@@ -132,17 +185,29 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	uidVal := session.Get("userId")
 	uid, ok := uidVal.(int64)
 	if !ok {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "login expired or invalid session", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "login expired or invalid session",
+			Data: nil,
+		})
 		return
 	}
 
 	user, err := h.svc.Profile(c.Request.Context(), uid)
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotFound) {
-			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeUserNotFound, Msg: "user not found", Data: nil})
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeUserNotFound,
+				Msg:  "user not found",
+				Data: nil,
+			})
 			return
 		}
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 
@@ -157,6 +222,18 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) Logout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear() // Clear all session data
+	session.Save()
+
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "user logged out successfully",
+		Data: nil,
+	})
+}
+
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	type UpdateProfileRequest struct {
 		Nickname string `json:"nickname"`
@@ -165,7 +242,11 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeInvalidParam, Msg: "invalid request", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "invalid request",
+			Data: nil,
+		})
 		return
 	}
 
@@ -173,7 +254,11 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	uidVal := session.Get("userId")
 	uid, ok := uidVal.(int64)
 	if !ok {
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "login expired or invalid session", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "login expired or invalid session",
+			Data: nil,
+		})
 		return
 	}
 
@@ -184,14 +269,26 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotFound) {
-			c.JSON(http.StatusOK, resp.Result{Code: resp.CodeUserNotFound, Msg: "user not found", Data: nil})
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeUserNotFound,
+				Msg:  "user not found",
+				Data: nil,
+			})
 			return
 		}
-		c.JSON(http.StatusOK, resp.Result{Code: resp.CodeServerBusy, Msg: "system error", Data: nil})
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.Result{Code: resp.CodeSuccess, Msg: "user profile updated successfully", Data: nil})
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "user profile updated successfully",
+		Data: nil,
+	})
 }
 
 func ValidatePassword(password string) (bool, error) {

@@ -53,6 +53,19 @@ func InitRouter() *gin.Engine {
 		panic(err)
 	}
 
+	// Option B: Set global default session options at the store level.
+	// This ensures all sessions created via this store share the same secure defaults.
+	store.Options(sessions.Options{
+		// Path: The path where the cookie is valid. "/" means the entire site.
+		Path: "/",
+		// MaxAge: Default session expiration time (30 minutes).
+		MaxAge: 30 * 60,
+		// HttpOnly: Prevents client-side scripts from accessing the cookie.
+		HttpOnly: true,
+		// Secure: Set to false for local HTTP development.
+		Secure: false,
+	})
+
 	// Register global session middleware.
 	// "connectify" is the name (key) of the cookie in the browser.
 	// When the browser stores the cookie, it will show Name="connectify".
