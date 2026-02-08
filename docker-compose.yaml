@@ -33,9 +33,10 @@ services:
       # 3. Purpose: Enables external access to MySQL server running inside the container.
       - 13306:3306
 
-  # redis:
-  #   image: 'bitnami/redis:latest'
-  #   environment:
-  #     - ALLOW_EMPTY_PASSWORD=yes
-  #   ports:
-  #     - 16379:6379
+  redis:
+    image: 'bitnami/redis:latest'
+    restart: always
+    environment:
+      - REDIS_PASSWORD=np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B
+    ports:
+      - 16379:6379

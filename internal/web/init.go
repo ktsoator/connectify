@@ -1,11 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/ktsoator/connectify/internal/web/middleware"
 )
@@ -25,13 +26,32 @@ func InitRouter() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	// Initialize the session storage engine.
-	// "Ktsoator" is the secret key used to encrypt/sign session data.
-	// It prevents users from tampering with cookie content. In production, this should be more complex and kept secret.
+	// Session storage initialization.
+	// We have two options for session storage:
+
+	// Option 1: Cookie-based session storage.
+	// All session data is stored directly in the cookie on the client side.
 	// "Ktsoator" is the authentication key (for signing).
 	// "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B" is the encryption key (for encrypting).
 	// In production, these should be loaded from environment variables.
-	store := cookie.NewStore([]byte("Ktsoator"), []byte("np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B"))
+	// store := cookie.NewStore([]byte("Ktsoator"), []byte("np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B"))
+
+	// Option 2: Redis-based session storage.
+	// Only the session ID is stored in the cookie; the actual data resides in Redis.
+	// Parameters:
+	// 1. 10: Maximum number of idle connections in the pool.
+	// 2. "tcp": Network type.
+	// 3. "localhost:16379": Redis server address (mapped in docker-compose).
+	// 4. "": Username (empty for default Redis setup).
+	// 5. "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B": Password (set in docker-compose).
+	// 6. []byte(...): Authentication key for signing session cookies.
+	// 7. []byte(...): Encryption key for encrypting session data (AES).
+	store, err := redis.NewStore(10, "tcp", "localhost:16379", "", "np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B",
+		[]byte("Ktsoator"), []byte("np6p_m!qY8G@Z-7*fR2&jS9#vT5%kL8B"))
+	if err != nil {
+		fmt.Println("Failed to initialize Redis session store:", err)
+		panic(err)
+	}
 
 	// Register global session middleware.
 	// "connectify" is the name (key) of the cookie in the browser.
