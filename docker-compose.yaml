@@ -1,13 +1,13 @@
 # ==============================================================================
 # Docker Compose Cheat Sheet (Common Commands)
 # ==============================================================================
-# 1. Start services in background:     docker-compose up -d
-# 2. Stop and remove containers:       docker-compose down
-# 3. Stop and remove EVERYTHING:       docker-compose down -v (removes volumes)
-# 4. View logs (follow):               docker-compose logs -f mysql8
-# 5. Enter container shell:            docker-compose exec mysql8 bash
-# 6. Check status:                     docker-compose ps
-# 7. Restart services:                 docker-compose restart
+# 1. Start services in background:     docker compose up -d
+# 2. Stop and remove containers:       docker compose down
+# 3. Stop and remove EVERYTHING:       docker compose down -v (removes volumes)
+# 4. View logs (follow):               docker compose logs -f mysql8
+# 5. Enter container shell:            docker compose exec mysql8 bash
+# 6. Check status:                     docker compose ps
+# 7. Restart services:                 docker compose restart
 # ==============================================================================
 
 services:
