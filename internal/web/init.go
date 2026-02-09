@@ -72,8 +72,15 @@ func InitRouter() *gin.Engine {
 	// 'store' is the storage engine created above, determining where session data is actually stored (here, in the cookie).
 	server.Use(sessions.Sessions("connectify", store))
 
-	server.Use(middleware.NewLoginMiddlewareBuilder().
-		IgnorePath("/user/login").
+	// server.Use(middleware.NewLoginMiddlewareBuilder().
+	// 	IgnorePath("/user/login").
+	// 	IgnorePath("/user/signup").
+	// 	Build())
+
+	// JWT login middleware
+	// Ignore authentication for the following paths
+	server.Use(middleware.NewLoginJwtMiddlewareBuilder().
+		IgnorePath("/user/login_jwt").
 		IgnorePath("/user/signup").
 		Build())
 

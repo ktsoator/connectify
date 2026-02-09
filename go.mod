@@ -8,6 +8,7 @@ require (
 	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-sql-driver/mysql v1.8.1
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/securecookie v1.1.2
 	golang.org/x/crypto v0.47.0
 	gorm.io/driver/mysql v1.6.0

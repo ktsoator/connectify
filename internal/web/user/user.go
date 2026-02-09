@@ -3,14 +3,23 @@ package user
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/ktsoator/connectify/internal/domain"
 	"github.com/ktsoator/connectify/internal/service"
 	"github.com/ktsoator/connectify/internal/web/resp"
 )
+
+type UserClaims struct {
+	UserId    int64
+	UserEmail string
+	UserAgent string
+	jwt.RegisteredClaims
+}
 
 const (
 	emailRegex    = `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
@@ -31,10 +40,17 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	rg := r.Group("/user")
 
 	rg.POST("/signup", h.Signup)
-	rg.POST("/login", h.Login)
-	rg.POST("/logout", h.Logout)
-	rg.GET("/profile", h.GetProfile)
+
+	// rg.POST("/login", h.Login)
+	rg.POST("/login_jwt", h.LoginJwt)
+
+	// rg.GET("/profile", h.GetProfile)
+	rg.GET("/profile_jwt", h.GetProfileJwt)
+
 	rg.PUT("/profile", h.UpdateProfile)
+
+	rg.POST("/logout", h.Logout)
+
 }
 
 func (h *UserHandler) Signup(c *gin.Context) {
@@ -222,6 +238,47 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) GetProfileJwt(c *gin.Context) {
+	type ProfileResponse struct {
+		Email    string `json:"email"`
+		Nickname string `json:"nickname"`
+		Intro    string `json:"intro"`
+	}
+
+	claim := h.MustGetUserClaims(c)
+	if c.IsAborted() {
+		return
+	}
+
+	user, err := h.svc.Profile(c.Request.Context(), claim.UserId)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeUserNotFound,
+				Msg:  "user not found",
+				Data: nil,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "success",
+		Data: ProfileResponse{
+			Email:    user.Email,
+			Nickname: user.Nickname,
+			Intro:    user.Intro,
+		},
+	})
+}
+
 func (h *UserHandler) Logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear() // Clear all session data
@@ -299,4 +356,102 @@ func ValidatePassword(password string) (bool, error) {
 func ValidateEmail(email string) (bool, error) {
 	re := regexp2.MustCompile(emailRegex, 0)
 	return re.MatchString(email)
+}
+
+func (h *UserHandler) LoginJwt(c *gin.Context) {
+	type LoginRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeInvalidParam,
+			Msg:  "invalid request",
+			Data: nil,
+		})
+		return
+	}
+
+	user, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidUserOrPassword) {
+			c.JSON(http.StatusOK, resp.Result{
+				Code: resp.CodeInvalidCreds,
+				Msg:  "invalid email or password",
+				Data: nil,
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
+		return
+	}
+
+	h.SetJwtToken(c, domain.User{
+		ID:    user.ID,
+		Email: user.Email})
+
+	c.JSON(http.StatusOK, resp.Result{
+		Code: resp.CodeSuccess,
+		Msg:  "user logged in successfully",
+		Data: nil,
+	})
+}
+
+func (u *UserHandler) MustGetUserClaims(c *gin.Context) UserClaims {
+	// Get user information from claim stored in context by middleware
+	claimAny, exists := c.Get("claim")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
+		c.Abort()
+		return UserClaims{}
+	}
+
+	claim, ok := claimAny.(UserClaims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
+		c.Abort()
+		return UserClaims{}
+	}
+
+	return claim
+}
+
+func (u *UserHandler) SetJwtToken(c *gin.Context, user domain.User) {
+	claims := UserClaims{
+		UserId:    user.ID,
+		UserEmail: user.Email,
+		UserAgent: c.Request.UserAgent(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString([]byte("Ktsoator"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, resp.Result{
+			Code: resp.CodeServerBusy,
+			Msg:  "system error",
+			Data: nil,
+		})
+		c.Abort()
+		return
+	}
+
+	c.Header("Jwt-Token", tokenStr)
 }
