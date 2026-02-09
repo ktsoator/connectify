@@ -18,7 +18,7 @@ func InitRouter() *gin.Engine {
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "Jwt-Token"},
 		AllowCredentials: true,
 		// AllowOriginFunc: func(origin string) bool {
 		// 	return origin == "https://github.com"
