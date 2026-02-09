@@ -47,7 +47,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if tokenHeader == "" {
 			ctx.AbortWithStatusJSON(http.StatusOK, resp.Result{
 				Code: resp.CodeInvalidCreds,
-				Msg:  "未授权",
+				Msg:  "unauthorized",
 				Data: nil,
 			})
 			return
@@ -57,7 +57,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if len(segs) != 2 || segs[0] != "Bearer" {
 			ctx.AbortWithStatusJSON(http.StatusOK, resp.Result{
 				Code: resp.CodeInvalidCreds,
-				Msg:  "未授权",
+				Msg:  "unauthorized",
 				Data: nil,
 			})
 			return
@@ -71,7 +71,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if err != nil || !jwtToken.Valid { // Token expired, return false
 			ctx.AbortWithStatusJSON(http.StatusOK, resp.Result{
 				Code: resp.CodeInvalidCreds,
-				Msg:  "未授权",
+				Msg:  "unauthorized",
 				Data: nil,
 			})
 			return
@@ -80,7 +80,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if claim.UserAgent != ctx.Request.UserAgent() { // Check if UserAgent is consistent
 			ctx.AbortWithStatusJSON(http.StatusOK, resp.Result{
 				Code: resp.CodeInvalidCreds,
-				Msg:  "未授权",
+				Msg:  "unauthorized",
 				Data: nil,
 			})
 			return
